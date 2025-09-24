@@ -1,19 +1,20 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
+import { PaginatioDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class ProductsService {
 
-  private readonly logger= new Logger(ProductsService.name)
+  private readonly logger = new Logger(ProductsService.name)
 
-  constructor( 
+  constructor(
     @InjectRepository(Product)
     private readonly repository: Repository<Product>
-  ) {}
+  ) { }
 
 
   async create(createProductDto: CreateProductDto) {
@@ -27,24 +28,33 @@ export class ProductsService {
     }
   }
 
-  findAll() {
-    return `This action returns all products`;
+  async findAll(pagination : PaginatioDto) {
+    const { limit = 10, offset = 0 } = pagination
+    return await this.repository.find({
+      take: limit,
+      skip: offset
+    })
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  async findOne(id: string) {
+    const product = await this.repository.findOneBy({ id })
+    if (!product) throw new NotFoundException(`Product not found with ${id}`)
+
+    return product
   }
 
   update(id: number, updateProductDto: UpdateProductDto) {
     return `This action updates a #${id} product`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async remove(id: string) {
+    const productDB = await this.findOne(id)
+
+    return await this.repository.remove(productDB)
   }
 
   private handleExceptions(error: any) {
-    if( error.code === "23505")
+    if (error.code === "23505")
       throw new BadRequestException(error.detail)
 
     this.logger.error(error)
