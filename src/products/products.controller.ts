@@ -20,11 +20,11 @@ export class ProductsController {
     return this.productsService.findAll(pagination);
   }
 
-  @Get(':id')
+  @Get(':term')
   findOne(
-    @Param('id', ParseUUIDPipe) id: string
+    @Param('term') term: string
   ) {
-    return this.productsService.findOne(id);
+    return this.productsService.findOne(term);
   }
 
   @Patch(':id')
