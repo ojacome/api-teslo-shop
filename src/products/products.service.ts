@@ -29,7 +29,7 @@ export class ProductsService {
     }
   }
 
-  async findAll(pagination : PaginatioDto) {
+  async findAll(pagination: PaginatioDto) {
     const { limit = 10, offset = 0 } = pagination
     return await this.repository.find({
       take: limit,
@@ -40,22 +40,33 @@ export class ProductsService {
   async findOne(term: string) {
     let product: Product | null = null
 
-    if ( IsUuid(term)) product = await this.repository.findOneBy({id: term })
-      else {
-        const builder = this.repository.createQueryBuilder()
-        product = await builder.where('UPPER(title) =:title or slug =:slug', {
-          title: term.toLocaleUpperCase(),
-          slug: term.toLocaleLowerCase()
-        }).getOne()
+    if (IsUuid(term)) product = await this.repository.findOneBy({ id: term })
+    else {
+      const builder = this.repository.createQueryBuilder()
+      product = await builder.where('UPPER(title) =:title or slug =:slug', {
+        title: term.toLocaleUpperCase(),
+        slug: term.toLocaleLowerCase()
+      }).getOne()
     }
-    
+
     if (!product) throw new NotFoundException(`Product not found with ${term}`)
 
     return product
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    const product = await this.repository.preload({
+      id: id,
+      ...updateProductDto
+    })
+
+    if (!product) throw new NotFoundException(`Product not found ${id}`)
+
+    try {
+      return await this.repository.save(product);
+    } catch (error) {
+      this.handleExceptions(error)
+    }
   }
 
   async remove(id: string) {
