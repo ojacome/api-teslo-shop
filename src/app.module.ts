@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsModule } from './products/products.module';
 import { CommonModule } from './common/common.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { CommonModule } from './common/common.module';
       synchronize: true // solo para dev
     }),
     ProductsModule,
-    CommonModule
+    CommonModule,
+    AuthModule
   ],
   controllers: [],
   providers: [],
