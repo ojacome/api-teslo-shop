@@ -1,31 +1,55 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt'
+import { LoginUserDto } from './dto/login-user.dto';
 
 @Injectable()
 export class AuthService {
-  
+
   constructor(
     @InjectRepository(User)
     private readonly repository: Repository<User>
-  ) {}
+  ) { }
 
   async register(createAuthDto: CreateUserDto) {
     try {
-      const user = this.repository.create(createAuthDto)
+      const { password, ...userData } = createAuthDto
+      const user = this.repository.create({
+        ...userData,
+        password: bcrypt.hashSync(password, 10)
+      })
 
       await this.repository.save(user)
-      
-      return user
+
+      const { password: pass, ...userInfo } = user;
+      return userInfo;
     } catch (error) {
       this.handleErrorsDB(error)
     }
   }
 
+  async login(request: LoginUserDto) {
+    const { email, password } = request
+
+    const userDB = await this.repository.findOne({
+      where: { email },
+      select: { email: true, password: true }
+    })
+
+    if (!userDB)
+      throw new UnauthorizedException("User not found")
+
+    if (!bcrypt.compareSync(password, userDB.password))
+      throw new UnauthorizedException("Credentials invalid")
+
+    return userDB
+  }
+
   private handleErrorsDB(err: any) {
-    if(err.code === '23505') 
+    if (err.code === '23505')
       throw new BadRequestException(err.detail)
 
     console.error(err.detail)
