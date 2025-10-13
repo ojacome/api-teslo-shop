@@ -3,6 +3,9 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { GetUser } from './decorators/get-user.decorator';
+import { User } from './entities/user.entity';
+import { RawHeaders } from './decorators/raw-headers.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -25,9 +28,15 @@ export class AuthController {
   @Post("test")
   @UseGuards(AuthGuard())
   test(
+    @GetUser() user: User,
+    @GetUser('email') userEmail: User,
+    @RawHeaders() rawHeaders: any
   ) {
+    console.info(rawHeaders)
     return {
-      ok: "true"
+      ok: "true",
+      user,
+      userEmail
     }
   }
 }
