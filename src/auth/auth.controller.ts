@@ -9,6 +9,7 @@ import { RawHeaders } from './decorators/raw-headers.decorator';
 import { UserRoleGuard } from './guards/user-role/user-role.guard';
 import { RoleProtected } from './decorators/role-protected.decorator';
 import { ValidRoles } from './interfaces/valid-roles';
+import { Auth } from './decorators/auth.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -47,6 +48,17 @@ export class AuthController {
   @RoleProtected(ValidRoles.superUser)
   @UseGuards(AuthGuard(), UserRoleGuard)
   test2(
+    @GetUser() user: User,
+  ) {
+    return {
+      ok: "true",
+      user
+    }
+  }
+  
+  @Post("test3")
+  @Auth()
+  test3(
     @GetUser() user: User,
   ) {
     return {
