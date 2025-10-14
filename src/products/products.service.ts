@@ -3,9 +3,9 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Product } from './entities/product.entity';
 import { PaginatioDto } from 'src/common/dto/pagination.dto';
 import { validate as IsUuid } from 'uuid'
+import { Product, ProductImage } from './entities';
 
 @Injectable()
 export class ProductsService {
@@ -14,16 +14,23 @@ export class ProductsService {
 
   constructor(
     @InjectRepository(Product)
-    private readonly repository: Repository<Product>
+    private readonly repository: Repository<Product>,
+    @InjectRepository(ProductImage)
+    private readonly repositoryImages: Repository<ProductImage>
   ) { }
 
 
   async create(createProductDto: CreateProductDto) {
     try {
-      const product = this.repository.create(createProductDto)
+      const { images = [], ...productDetails } = createProductDto
+
+      const product = this.repository.create({
+        ...productDetails,
+        images: images.map(image => this.repositoryImages.create({url: image}))
+      })
       await this.repository.save(product)
 
-      return product
+      return { ...product, images }
     } catch (error) {
       this.handleExceptions(error)
     }
@@ -57,7 +64,8 @@ export class ProductsService {
   async update(id: string, updateProductDto: UpdateProductDto) {
     const product = await this.repository.preload({
       id: id,
-      ...updateProductDto
+      ...updateProductDto,
+      images: []
     })
 
     if (!product) throw new NotFoundException(`Product not found ${id}`)
